@@ -36,3 +36,6 @@ export 'src/system_status/system_status_service.dart';
 
 export 'src/legal/legal_models.dart';
 export 'src/legal/legal_service.dart';
+
+export 'src/llm_hub/llm_hub_models.dart';
+export 'src/llm_hub/llm_hub_service.dart';

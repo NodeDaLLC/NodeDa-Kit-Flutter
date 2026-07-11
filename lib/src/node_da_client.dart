@@ -9,6 +9,7 @@ import 'core/service_endpoints.dart';
 import 'distribution/distribution_service.dart';
 import 'feature_flags/feature_flags_service.dart';
 import 'legal/legal_service.dart';
+import 'llm_hub/llm_hub_service.dart';
 import 'newsroom/newsroom_service.dart';
 import 'sales/sales_service.dart';
 import 'support/support_service.dart';
@@ -90,6 +91,14 @@ class NodeDaClient {
             transport: transport,
           ),
           orgId: configuration.organizationId,
+        ),
+        llmHub = LLMHubService(
+          http: HttpClient(
+            baseUrl: configuration.endpoints.llmHub,
+            configuration: configuration,
+            transport: transport,
+          ),
+          orgId: configuration.organizationId,
         );
 
   /// Convenience: build a client with sane defaults from an API key.
@@ -159,6 +168,7 @@ class NodeDaClient {
   final FeatureFlagsService featureFlags;
   final SystemStatusService systemStatus;
   final LegalService legal;
+  final LLMHubService llmHub;
 
   /// Issues `GET /health` against every service client in parallel.
   Future<Map<String, HealthResponse>> healthAll() async {
@@ -171,6 +181,7 @@ class NodeDaClient {
       featureFlags.health(),
       systemStatus.health(),
       legal.health(),
+      llmHub.health(),
     ]);
     return {
       'distribution': results[0],
@@ -181,6 +192,7 @@ class NodeDaClient {
       'featureFlags': results[5],
       'systemStatus': results[6],
       'legal': results[7],
+      'llmHub': results[8],
     };
   }
 }

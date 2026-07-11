@@ -3,7 +3,9 @@
  * app — paste patterns into your own Flutter project.
  *
  *     dependencies:
- *       nodeda: ^1.1.0
+ *       nodeda:
+ *         git:
+ *           url: https://github.com/NodeDaLLC/NodeDa-Kit-Flutter.git
  */
 import 'package:nodeda/nodeda.dart';
 
@@ -52,7 +54,15 @@ Future<void> main() async {
   );
   print('dark_mode = ${flags.results['dark_mode']}');
 
-  // Runs all 8 /health endpoints concurrently.
+  final completion = await client.llmHub.chat(
+    messages: const [
+      ChatMessage(role: ChatMessageRole.user, content: 'Hello'),
+    ],
+    model: LLMHubModelID.recommendedDefault,
+  );
+  print('LLM Hub: ${completion.firstContent}');
+
+  // Runs all 9 /health endpoints concurrently.
   final health = await client.healthAll();
   health.forEach((name, response) {
     print('$name -> ${response.ok}');

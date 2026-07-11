@@ -1,6 +1,6 @@
 # NodeDa Flutter
 
-**Current version: `1.1.0`** · available at runtime as `NodeDa.version`.
+**Current version: `1.2.0`** · available at runtime as `NodeDa.version`.
 
 The official Flutter/Dart SDK for the **NodeDa** HTTP APIs. One typed
 client, one auth scheme, every public service NodeDa exposes — built on
@@ -19,7 +19,7 @@ final latest = await client.distribution.latest(
   channel: DistributionChannel.stable,
 );
 print('Latest version: ${latest.artifact.version ?? latest.release.version}');
-print('SDK version: ${NodeDa.version}'); // "1.1.0"
+print('SDK version: ${NodeDa.version}'); // "1.2.0"
 ```
 
 ## Requirements
@@ -57,7 +57,7 @@ Import and use:
 import 'package:nodeda/nodeda.dart';
 ```
 
-To pin a release, set `ref` to a tag (e.g. `v1.1.0`) once tags are published.
+To pin a release, set `ref` to a tag (e.g. `v1.2.0`) once tags are published.
 
 ## Authentication
 
@@ -104,13 +104,42 @@ flutter run --dart-define=NODEDA_API_KEY=sk_live_… --dart-define=NODEDA_ORG_ID
 | `client.featureFlags` | Feature flags / evaluate |
 | `client.systemStatus` | Status page |
 | `client.legal` | Legal policies |
+| `client.llmHub` | LLM Hub chat completions |
 
 ```dart
-// Parallel health check across all eight services
+// Parallel health check across all nine services
 final health = await client.healthAll();
 ```
 
 All traffic uses the unified gateway `https://api.nodeda.com`.
+
+### LLM Hub API
+
+OpenAI-compatible chat completions via the Vertex LLM Hub gateway
+(Nrova Gemini + optional BYO routing). Requires a developer API key with
+the `llm:invoke` scope (`LLMHubScope.invoke`). Omit `model` to use the
+org’s configured default; catalog ids live on `LLMHubModelID`.
+
+```dart
+final completion = await client.llmHub.createChatCompletion(
+  ChatCompletionRequest(
+    messages: [
+      ChatMessage(role: ChatMessageRole.system, content: 'You are a helpful assistant.'),
+      ChatMessage(role: ChatMessageRole.user, content: 'Summarize our release notes.'),
+    ],
+    model: LLMHubModelID.gemini31FlashLite,
+    temperature: 0.2,
+    maxTokens: 512,
+  ),
+);
+print(completion.firstContent);
+
+// Sugar:
+final reply = await client.llmHub.chat(
+  messages: [ChatMessage(role: ChatMessageRole.user, content: 'Hello')],
+  model: LLMHubModelID.recommendedDefault,
+);
+```
 
 ## Error handling
 
@@ -157,6 +186,7 @@ lib/
     feature_flags/
     system_status/
     legal/
+    llm_hub/
 ```
 
 ## License

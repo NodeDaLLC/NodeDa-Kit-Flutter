@@ -45,6 +45,7 @@ void main() {
       expect(configuration.endpoints.developer, unified);
       expect(configuration.endpoints.systemStatus, unified);
       expect(configuration.endpoints.legalPolicies, unified);
+      expect(configuration.endpoints.llmHub, unified);
       expect(ServiceEndpoints.unifiedApiBase, unified);
     });
 
@@ -61,6 +62,7 @@ void main() {
       expect(client.featureFlags, isNotNull);
       expect(client.systemStatus, isNotNull);
       expect(client.legal, isNotNull);
+      expect(client.llmHub, isNotNull);
     });
   });
 
@@ -275,6 +277,103 @@ void main() {
     });
   });
 
+  group('llm hub', () {
+    test('createChatCompletion posts OpenAI-shaped body', () async {
+      const orgId = NodeDaConfiguration.defaultOrganizationId;
+      final mock = MockTransport((request) {
+        expect(request.method, 'POST');
+        expect(
+          request.url.path,
+          '/v1/organizations/$orgId/llm/chat/completions',
+        );
+        expect(request.headers['Authorization'], 'Bearer test-key');
+        expect(request.headers['Content-Type'], 'application/json');
+
+        final sent =
+            jsonDecode(utf8.decode(request.body!)) as Map<String, dynamic>;
+        expect(sent['model'], 'gemini-3.1-flash-lite');
+        expect(sent['temperature'], 0.2);
+        expect(sent['max_tokens'], 512);
+        final messages = sent['messages'] as List<dynamic>;
+        expect(messages, hasLength(2));
+        expect((messages[0] as Map)['role'], 'system');
+        expect((messages[1] as Map)['role'], 'user');
+
+        final json = '''
+{
+  "id": "chatcmpl_test",
+  "object": "chat.completion",
+  "created": 1752240000,
+  "model": "gemini-3.1-flash-lite",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "Ship it." },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 3,
+    "total_tokens": 27
+  }
+}
+''';
+        return (utf8.encode(json), 200, const {});
+      });
+
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      final completion = await client.llmHub.createChatCompletion(
+        ChatCompletionRequest(
+          messages: const [
+            ChatMessage(
+              role: ChatMessageRole.system,
+              content: 'You are a helpful assistant.',
+            ),
+            ChatMessage(
+              role: ChatMessageRole.user,
+              content: 'Summarize our release notes.',
+            ),
+          ],
+          model: LLMHubModelID.gemini31FlashLite,
+          temperature: 0.2,
+          maxTokens: 512,
+        ),
+      );
+      expect(completion.id, 'chatcmpl_test');
+      expect(completion.model, 'gemini-3.1-flash-lite');
+      expect(completion.firstContent, 'Ship it.');
+      expect(completion.usage?.totalTokens, 27);
+      expect(completion.choices.first.finishReason, 'stop');
+    });
+
+    test('chat sugar posts same endpoint', () async {
+      const orgId = NodeDaConfiguration.defaultOrganizationId;
+      final mock = MockTransport((request) {
+        expect(request.method, 'POST');
+        expect(
+          request.url.path,
+          '/v1/organizations/$orgId/llm/chat/completions',
+        );
+        return (
+          utf8.encode(
+            '{"id":"c1","choices":[{"message":{"role":"assistant","content":"Hi"}}]}',
+          ),
+          200,
+          const {},
+        );
+      });
+
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      final completion = await client.llmHub.chat(
+        messages: const [
+          ChatMessage(role: ChatMessageRole.user, content: 'Hello'),
+        ],
+      );
+      expect(completion.firstContent, 'Hi');
+    });
+  });
+
   group('map configuration', () {
     test('uses provided key and org', () {
       final configuration = MapConfiguration.fromMap({
@@ -351,7 +450,7 @@ void main() {
   group('version', () {
     test('SDK version is exposed', () {
       expect(NodeDa.version, isNotEmpty);
-      expect(NodeDa.version, '1.1.0');
+      expect(NodeDa.version, '1.2.0');
     });
   });
 
