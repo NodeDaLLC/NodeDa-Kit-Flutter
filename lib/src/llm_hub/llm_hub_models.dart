@@ -42,6 +42,11 @@ class ChatMessage {
 /// Request body for `POST …/llm/chat/completions`.
 ///
 /// Wire field names follow the OpenAI chat-completions shape (`max_tokens`, …).
+///
+/// The gateway chooses Nrova Gemini vs BYO from the org’s Hub `routingMode`.
+/// [model] is an optional hint only — omit it for the org default (Nrova) or
+/// the Custom LLM configured model (BYO). Do not send a provider URL, API key,
+/// or routing mode; those stay server-side.
 class ChatCompletionRequest {
   const ChatCompletionRequest({
     required this.messages,
@@ -168,11 +173,12 @@ class ChatCompletionResponse {
   }
 }
 
-/// Catalog model ids for Nrova-routed Gemini models on LLM Hub.
+/// Catalog model ids for **Nrova-routed** Gemini models on LLM Hub.
 ///
-/// Prefer these constants (or omit `model` to use the org default) over
-/// hard-coding strings. BYO routing may accept additional provider ids
-/// configured under Org Settings → Custom LLM.
+/// Useful when Hub routing is `nrova` (or `prefer_byo` fell back to Nrova).
+/// Prefer these constants — or omit `model` entirely for the org default.
+/// When the gateway routes to BYO, pass the provider’s model id (or omit for
+/// the Custom LLM configured model). Never send a provider base URL or key.
 abstract final class LLMHubModelID {
   /// Cost-efficient default for high-volume completions.
   static const String gemini31FlashLite = 'gemini-3.1-flash-lite';

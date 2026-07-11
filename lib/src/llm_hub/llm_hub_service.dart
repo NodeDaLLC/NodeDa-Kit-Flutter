@@ -5,21 +5,21 @@ import 'llm_hub_models.dart';
 /// Client for the NodeDa Vertex LLM Hub API
 /// (`https://api.nodeda.com` — path prefix `/v1/organizations/{orgId}/llm/`).
 ///
-/// OpenAI-compatible chat completions with metered Nrova Gemini routing
-/// and optional BYO provider routing. Requires a developer API key with
-/// the [LLMHubScope.invoke] (`llm:invoke`) scope.
+/// OpenAI-compatible chat completions. The **server** chooses the upstream
+/// (Nrova Gemini vs BYO) from Developer → LLM Hub `routingMode`
+/// (`nrova` | `byo` | `prefer_byo`). Clients keep the same request shape;
+/// `model` is an optional hint. Requires a developer API key with the
+/// [LLMHubScope.invoke] (`llm:invoke`) scope.
 ///
 /// ```dart
-/// final completion = await client.llmHub.createChatCompletion(
-///   ChatCompletionRequest(
-///     messages: [
-///       ChatMessage(role: ChatMessageRole.system, content: 'You are a helpful assistant.'),
-///       ChatMessage(role: ChatMessageRole.user, content: 'Summarize our release notes.'),
-///     ],
-///     model: LLMHubModelID.gemini31FlashLite,
-///     temperature: 0.2,
-///     maxTokens: 512,
-///   ),
+/// // Prefer omitting model — Hub / BYO defaults apply.
+/// final completion = await client.llmHub.chat(
+///   messages: [
+///     ChatMessage(role: ChatMessageRole.system, content: 'You are a helpful assistant.'),
+///     ChatMessage(role: ChatMessageRole.user, content: 'Summarize our release notes.'),
+///   ],
+///   temperature: 0.2,
+///   maxTokens: 512,
 /// );
 /// print(completion.firstContent);
 /// ```

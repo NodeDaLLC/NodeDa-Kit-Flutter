@@ -372,6 +372,31 @@ void main() {
       );
       expect(completion.firstContent, 'Hi');
     });
+
+    test('omits nil model from wire body', () async {
+      final mock = MockTransport((request) {
+        final sent =
+            jsonDecode(utf8.decode(request.body!)) as Map<String, dynamic>;
+        expect(sent.containsKey('model'), isFalse);
+        expect(sent['messages'], isNotNull);
+        return (
+          utf8.encode(
+            '{"id":"c2","choices":[{"message":{"role":"assistant","content":"ok"}}]}',
+          ),
+          200,
+          const {},
+        );
+      });
+
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      await client.llmHub.createChatCompletion(
+        const ChatCompletionRequest(
+          messages: [
+            ChatMessage(role: ChatMessageRole.user, content: 'Hi'),
+          ],
+        ),
+      );
+    });
   });
 
   group('map configuration', () {

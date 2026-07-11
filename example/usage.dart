@@ -58,7 +58,6 @@ Future<void> main() async {
     messages: const [
       ChatMessage(role: ChatMessageRole.user, content: 'Hello'),
     ],
-    model: LLMHubModelID.recommendedDefault,
   );
   print('LLM Hub: ${completion.firstContent}');
 

@@ -1,6 +1,6 @@
 name: nodeda
 description: Official Flutter/Dart SDK for the NodeDa HTTP APIs. One typed client, one auth scheme, every public service NodeDa exposes.
-version: 1.2.0
+version: 1.2.1
 homepage: https://github.com/NodeDaLLC/NodeDa-Kit-Flutter
 repository: https://github.com/NodeDaLLC/NodeDa-Kit-Flutter
 
