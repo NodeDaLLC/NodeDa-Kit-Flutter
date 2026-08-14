@@ -46,6 +46,7 @@ void main() {
       expect(configuration.endpoints.systemStatus, unified);
       expect(configuration.endpoints.legalPolicies, unified);
       expect(configuration.endpoints.llmHub, unified);
+      expect(configuration.endpoints.appAnalytics, unified);
       expect(ServiceEndpoints.unifiedApiBase, unified);
     });
 
@@ -63,6 +64,7 @@ void main() {
       expect(client.systemStatus, isNotNull);
       expect(client.legal, isNotNull);
       expect(client.llmHub, isNotNull);
+      expect(client.appAnalytics, isNotNull);
     });
   });
 
@@ -399,6 +401,122 @@ void main() {
     });
   });
 
+  group('app analytics', () {
+    test('ingest posts session batch', () async {
+      const orgId = NodeDaConfiguration.defaultOrganizationId;
+      final mock = MockTransport((request) {
+        expect(request.method, 'POST');
+        expect(
+          request.url.path,
+          '/v1/organizations/$orgId/app-analytics/events',
+        );
+        expect(request.headers['Authorization'], 'Bearer test-key');
+        expect(request.headers['X-API-Key'], 'test-key');
+        expect(request.headers['Content-Type'], 'application/json');
+
+        final sent =
+            jsonDecode(utf8.decode(request.body!)) as Map<String, dynamic>;
+        expect(sent['bundleId'], 'com.example.notes');
+        expect(sent['platform'], 'android');
+        expect(sent['sdk'], 'flutter');
+        expect(sent['installId'], 'install-uuid-from-device');
+        expect(sent['sessionId'], 'session-uuid-abcdef');
+        expect(sent['activeUserThresholdSeconds'], 120);
+        final events = sent['events'] as List<dynamic>;
+        expect(events, hasLength(3));
+        expect(events[0]['type'], 'session_start');
+        expect(events[0]['ts'], 1710000000000);
+        expect(events[1]['type'], 'screen');
+        expect(events[1]['screen'], 'Home');
+        expect(events[2]['type'], 'heartbeat');
+        expect(events[2]['foregroundDurationMs'], 120000);
+        expect(sent.containsKey('appVersion'), isFalse);
+        expect(sent.containsKey('osVersion'), isFalse);
+
+        return (
+          utf8.encode('''
+{
+  "ok": true,
+  "schema": "nrova.app-analytics.v1",
+  "appId": "example-notes",
+  "bundleId": "com.example.notes",
+  "qualifiedActive": false,
+  "activeUserThresholdSeconds": 120
+}
+'''),
+          200,
+          const {},
+        );
+      });
+
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      final result = await client.appAnalytics.ingest(
+        bundleId: 'com.example.notes',
+        platform: AppAnalyticsPlatform.android,
+        installId: 'install-uuid-from-device',
+        sessionId: 'session-uuid-abcdef',
+        events: const [
+          AppAnalyticsEvent.sessionStart(ts: 1710000000000),
+          AppAnalyticsEvent.screen('Home', ts: 1710000000500),
+          AppAnalyticsEvent.heartbeat(
+            ts: 1710000120000,
+            foregroundDurationMs: 120000,
+          ),
+        ],
+        sdk: AppAnalyticsSdk.flutter,
+        activeUserThresholdSeconds: AppAnalyticsActiveUserThreshold.defaultSeconds,
+      );
+      expect(result.ok, isTrue);
+      expect(result.schema, AppAnalyticsSchema.v1);
+      expect(result.appId, 'example-notes');
+      expect(result.bundleId, 'com.example.notes');
+      expect(result.qualifiedActive, isFalse);
+      expect(result.activeUserThresholdSeconds, 120);
+      expect(AppAnalyticsScope.write, 'app-analytics:write');
+    });
+
+    test('ingest omits nil optionals', () async {
+      final mock = MockTransport((request) {
+        final sent =
+            jsonDecode(utf8.decode(request.body!)) as Map<String, dynamic>;
+        expect(sent.containsKey('sdk'), isFalse);
+        expect(sent.containsKey('appVersion'), isFalse);
+        expect(sent.containsKey('osVersion'), isFalse);
+        expect(sent.containsKey('activeUserThresholdSeconds'), isFalse);
+        final event = (sent['events'] as List<dynamic>).first as Map;
+        expect(event.containsKey('ts'), isFalse);
+        expect(event.containsKey('screen'), isFalse);
+        expect(event.containsKey('foregroundDurationMs'), isFalse);
+        return (
+          utf8.encode(
+            '{"ok":true,"schema":"nrova.app-analytics.v1","appId":"a","bundleId":"com.example.notes"}',
+          ),
+          200,
+          const {},
+        );
+      });
+
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      await client.appAnalytics.ingestEvents(
+        const AppAnalyticsIngestRequest(
+          bundleId: 'com.example.notes',
+          platform: AppAnalyticsPlatform.android,
+          installId: 'install-uuid-from-device',
+          sessionId: 'session-uuid-abcdef',
+          events: [AppAnalyticsEvent.sessionStart()],
+        ),
+      );
+    });
+
+    test('opaque id charset', () {
+      final id = AppAnalyticsOpaqueId.generate();
+      expect(AppAnalyticsOpaqueId.isValid(id), isTrue);
+      expect(id.length, 22);
+      expect(AppAnalyticsOpaqueId.isValid('short'), isFalse);
+      expect(AppAnalyticsOpaqueId.isValid('install-uuid-from-device'), isTrue);
+    });
+  });
+
   group('map configuration', () {
     test('uses provided key and org', () {
       final configuration = MapConfiguration.fromMap({
@@ -475,7 +593,7 @@ void main() {
   group('version', () {
     test('SDK version is exposed', () {
       expect(NodeDa.version, isNotEmpty);
-      expect(NodeDa.version, '1.2.0');
+      expect(NodeDa.version, '1.3.0');
     });
   });
 

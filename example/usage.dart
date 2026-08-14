@@ -61,7 +61,20 @@ Future<void> main() async {
   );
   print('LLM Hub: ${completion.firstContent}');
 
-  // Runs all 9 /health endpoints concurrently.
+  final analytics = await client.appAnalytics.ingest(
+    bundleId: 'com.example.notes',
+    platform: AppAnalyticsPlatform.android,
+    installId: AppAnalyticsOpaqueId.generate(),
+    sessionId: AppAnalyticsOpaqueId.generate(),
+    events: const [
+      AppAnalyticsEvent.sessionStart(),
+      AppAnalyticsEvent.screen('Home'),
+      AppAnalyticsEvent.heartbeat(foregroundDurationMs: 120000),
+    ],
+  );
+  print('App analytics: ${analytics.appId} active=${analytics.qualifiedActive}');
+
+  // Runs all 10 /health endpoints concurrently.
   final health = await client.healthAll();
   health.forEach((name, response) {
     print('$name -> ${response.ok}');

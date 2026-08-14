@@ -39,3 +39,6 @@ export 'src/legal/legal_service.dart';
 
 export 'src/llm_hub/llm_hub_models.dart';
 export 'src/llm_hub/llm_hub_service.dart';
+
+export 'src/app_analytics/app_analytics_models.dart';
+export 'src/app_analytics/app_analytics_service.dart';

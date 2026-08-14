@@ -1,3 +1,4 @@
+import 'app_analytics/app_analytics_service.dart';
 import 'careers/careers_service.dart';
 import 'core/health_response.dart';
 import 'core/http_client.dart';
@@ -99,6 +100,14 @@ class NodeDaClient {
             transport: transport,
           ),
           orgId: configuration.organizationId,
+        ),
+        appAnalytics = AppAnalyticsService(
+          http: HttpClient(
+            baseUrl: configuration.endpoints.appAnalytics,
+            configuration: configuration,
+            transport: transport,
+          ),
+          orgId: configuration.organizationId,
         );
 
   /// Convenience: build a client with sane defaults from an API key.
@@ -169,6 +178,7 @@ class NodeDaClient {
   final SystemStatusService systemStatus;
   final LegalService legal;
   final LLMHubService llmHub;
+  final AppAnalyticsService appAnalytics;
 
   /// Issues `GET /health` against every service client in parallel.
   Future<Map<String, HealthResponse>> healthAll() async {
@@ -182,6 +192,7 @@ class NodeDaClient {
       systemStatus.health(),
       legal.health(),
       llmHub.health(),
+      appAnalytics.health(),
     ]);
     return {
       'distribution': results[0],
@@ -193,6 +204,7 @@ class NodeDaClient {
       'systemStatus': results[6],
       'legal': results[7],
       'llmHub': results[8],
+      'appAnalytics': results[9],
     };
   }
 }

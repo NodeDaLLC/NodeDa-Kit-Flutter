@@ -1,6 +1,6 @@
 # NodeDa Flutter
 
-**Current version: `1.2.0`** · available at runtime as `NodeDa.version`.
+**Current version: `1.3.0`** · available at runtime as `NodeDa.version`.
 
 The official Flutter/Dart SDK for the **NodeDa** HTTP APIs. One typed
 client, one auth scheme, every public service NodeDa exposes — built on
@@ -19,7 +19,7 @@ final latest = await client.distribution.latest(
   channel: DistributionChannel.stable,
 );
 print('Latest version: ${latest.artifact.version ?? latest.release.version}');
-print('SDK version: ${NodeDa.version}'); // "1.2.0"
+print('SDK version: ${NodeDa.version}'); // "1.3.0"
 ```
 
 ## Requirements
@@ -57,7 +57,7 @@ Import and use:
 import 'package:nodeda/nodeda.dart';
 ```
 
-To pin a release, set `ref` to a tag (e.g. `v1.2.0`) once tags are published.
+To pin a release, set `ref` to a tag (e.g. `v1.3.0`) once tags are published.
 
 ## Authentication
 
@@ -105,9 +105,10 @@ flutter run --dart-define=NODEDA_API_KEY=sk_live_… --dart-define=NODEDA_ORG_ID
 | `client.systemStatus` | Status page |
 | `client.legal` | Legal policies |
 | `client.llmHub` | LLM Hub chat completions |
+| `client.appAnalytics` | App analytics ingest |
 
 ```dart
-// Parallel health check across all nine services
+// Parallel health check across all ten services
 final health = await client.healthAll();
 ```
 
@@ -193,6 +194,55 @@ and camelCase in Dart (`promptTokens`, `finishReason`). Prefer
 v1 does **not** include streaming, tools/function calling, or multimodal
 content arrays — text chat completions only.
 
+### App Analytics API
+
+Session-batch ingest via the Vertex App Analytics gateway
+(`https://api.nodeda.com`, schema `nrova.app-analytics.v1`). Requires a
+developer API key with the `app-analytics:write` scope
+(`AppAnalyticsScope.write`). `app-analytics:read` cannot ingest.
+`GET /health` needs no key.
+
+Apps auto-register from `bundleId`. Country and region are resolved
+server-side from the request IP — never send a raw IP or user identity.
+JSON body limit ~64 KB. Rate limit ~120 requests / minute / org+app+install.
+
+Persist `installId` on device (8–64 letters, digits, `_` or `-`). Mint a
+new `sessionId` (same charset) each time the app foregrounds. Screen
+events require `events[].screen`. Heartbeat / `session_end` may include
+`foregroundDurationMs`. `activeUserThresholdSeconds` is optional (clamped
+30–3600, default 120).
+
+| Method | Endpoint | Scope |
+| --- | --- | --- |
+| `appAnalytics.health()` | `GET /health` | none |
+| `appAnalytics.ingestEvents(request)` | `POST …/app-analytics/events` | `app-analytics:write` |
+| `appAnalytics.ingest(bundleId:, platform:, installId:, sessionId:, events:, …)` | `POST …/app-analytics/events` | `app-analytics:write` |
+
+```dart
+final installId = AppAnalyticsOpaqueId.generate(); // persist this
+final sessionId = AppAnalyticsOpaqueId.generate(); // new each foreground
+
+final result = await client.appAnalytics.ingest(
+  bundleId: 'com.example.notes',
+  platform: AppAnalyticsPlatform.android,
+  installId: installId,
+  sessionId: sessionId,
+  events: const [
+    AppAnalyticsEvent.sessionStart(),
+    AppAnalyticsEvent.screen('Home'),
+    AppAnalyticsEvent.heartbeat(foregroundDurationMs: 120000),
+  ],
+  sdk: AppAnalyticsSdk.flutter,
+  activeUserThresholdSeconds: AppAnalyticsActiveUserThreshold.defaultSeconds,
+);
+print('${result.appId} active=${result.qualifiedActive}');
+```
+
+Gateway error codes (via `NodeDaApiException`): `invalid_api_key`,
+`missing_credential`, `org_mismatch`, `insufficient_scope`, `wrong_scope`,
+`rate_limited`. `400` covers invalid `bundleId` / `platform` / `installId`
+/ `sessionId` / `events`.
+
 ## Error handling
 
 ```dart
@@ -239,6 +289,7 @@ lib/
     system_status/
     legal/
     llm_hub/
+    app_analytics/
 ```
 
 ## License

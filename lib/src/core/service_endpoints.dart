@@ -14,6 +14,7 @@ class ServiceEndpoints {
     required this.systemStatus,
     required this.legalPolicies,
     required this.llmHub,
+    required this.appAnalytics,
   });
 
   /// Unified production API gateway (no trailing slash).
@@ -31,6 +32,7 @@ class ServiceEndpoints {
   final String systemStatus;
   final String legalPolicies;
   final String llmHub;
+  final String appAnalytics;
 
   /// Builds endpoints where every service shares [base].
   factory ServiceEndpoints.of(String base) {
@@ -45,6 +47,7 @@ class ServiceEndpoints {
       systemStatus: normalized,
       legalPolicies: normalized,
       llmHub: normalized,
+      appAnalytics: normalized,
     );
   }
 
