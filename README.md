@@ -250,10 +250,29 @@ User-scoped Drive (`nrova.drive.v1`). Paths are `/v1/drive/…` — **not**
 `/v1/organizations/{orgId}/…`. Pass the signed-in user's Firebase ID
 token. Do not send `X-API-Key` or `OrganizationId`.
 
+Sign the user in on the NodeDa website (PKCE). `DriveAuth.authorizeUrl`
+opens `https://vertex.nodeda.com/connect`; `DriveAuth.exchange` posts to
+`/api/connect/token` on that host (not `api.nodeda.com`).
+
 ```dart
-final session = await client.drive.session(idToken: idToken);
+final pkce = DriveAuth.makePkce();
+final signIn = DriveAuth.authorizeUrl(
+  clientId: 'com.example.notes',
+  redirectUri: Uri.parse('http://127.0.0.1:43781/oauth'),
+  state: 'csrf-token',
+  pkce: pkce,
+  appName: 'Example Notes',
+);
+// Open `signIn` in a browser / in-app web view, then:
+final tokens = await DriveAuth.exchange(
+  code: codeFromRedirect,
+  pkce: pkce,
+  clientId: 'com.example.notes',
+  redirectUri: Uri.parse('http://127.0.0.1:43781/oauth'),
+);
+final session = await client.drive.session(idToken: tokens.idToken);
 final folder = await client.drive.createAppFolder(
-  idToken: idToken,
+  idToken: tokens.idToken,
   appKey: 'com.example.notes',
   name: 'Example Notes',
 );

@@ -596,6 +596,65 @@ void main() {
       expect(folder.folder.appKey, 'com.example.notes');
       expect(folder.folder.space, DriveSpace.personal);
     });
+
+    test('DriveAuth.authorizeUrl uses the website, not the API host', () {
+      final pkce = DrivePkce(
+        verifier: 'a' * 43,
+        challenge: 'b' * 43,
+      );
+      final url = DriveAuth.authorizeUrl(
+        clientId: 'com.example.notes',
+        redirectUri: Uri.parse('http://127.0.0.1:43781/oauth'),
+        state: 'state-token-1',
+        pkce: pkce,
+        appName: 'Example Notes',
+      );
+      expect(url.host, 'vertex.nodeda.com');
+      expect(url.path, '/connect');
+      expect(url.toString().contains('/v1/organizations/'), isFalse);
+      expect(url.toString().contains('api.nodeda.com'), isFalse);
+      expect(url.queryParameters['client_id'], 'com.example.notes');
+      expect(url.queryParameters['code_challenge_method'], 'S256');
+      expect(url.queryParameters['code_challenge'], pkce.challenge);
+    });
+
+    test('DriveAuth.exchange posts to the website token path', () async {
+      final mock = MockTransport((request) {
+        expect(request.method, 'POST');
+        expect(request.url.host, 'vertex.nodeda.com');
+        expect(request.url.path, '/api/connect/token');
+        expect(request.url.toString().contains('/v1/organizations/'), isFalse);
+        expect(request.headers['X-API-Key'], isNull);
+        return (
+          utf8.encode(
+            '{"token_type":"Bearer","id_token":"idtok","refresh_token":"nrv_rt_x","expires_in":3600}',
+          ),
+          200,
+          const {'content-type': 'application/json'},
+        );
+      });
+      final pkce = DrivePkce(
+        verifier: 'a' * 43,
+        challenge: 'b' * 43,
+      );
+      final tokens = await DriveAuth.exchange(
+        code: 'nrv_ac_abc',
+        pkce: pkce,
+        clientId: 'com.example.notes',
+        redirectUri: Uri.parse('http://127.0.0.1:43781/oauth'),
+        transport: mock,
+      );
+      expect(tokens.idToken, 'idtok');
+      expect(tokens.refreshToken, 'nrv_rt_x');
+      expect(tokens.expiresIn, 3600);
+    });
+
+    test('DriveAuth.makePkce verifier length', () {
+      final pkce = DriveAuth.makePkce();
+      expect(pkce.verifier.length, greaterThanOrEqualTo(43));
+      expect(pkce.verifier.length, lessThanOrEqualTo(128));
+      expect(pkce.challenge.length, greaterThanOrEqualTo(43));
+    });
   });
 
   group('map configuration', () {

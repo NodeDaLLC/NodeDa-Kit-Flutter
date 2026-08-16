@@ -45,3 +45,4 @@ export 'src/app_analytics/app_analytics_service.dart';
 
 export 'src/drive/drive_models.dart';
 export 'src/drive/drive_service.dart';
+export 'src/drive/drive_auth.dart';
