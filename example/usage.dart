@@ -74,7 +74,17 @@ Future<void> main() async {
   );
   print('App analytics: ${analytics.appId} active=${analytics.qualifiedActive}');
 
-  // Runs all 10 /health endpoints concurrently.
+  // Firebase ID token for the signed-in NodeDa user (not an API key).
+  const idToken = String.fromEnvironment('NODEDA_ID_TOKEN');
+  final driveSession = await client.drive.session(idToken: idToken);
+  final folder = await client.drive.createAppFolder(
+    idToken: idToken,
+    appKey: 'com.example.notes',
+    name: 'Example Notes',
+  );
+  print('Drive folder: ${folder.folder.id} accounts=${driveSession.accounts.length}');
+
+  // Runs all 11 /health endpoints concurrently.
   final health = await client.healthAll();
   health.forEach((name, response) {
     print('$name -> ${response.ok}');

@@ -7,6 +7,7 @@ import 'core/map_configuration.dart';
 import 'core/node_da_configuration.dart';
 import 'core/node_da_transport.dart';
 import 'core/service_endpoints.dart';
+import 'distribution/distribution_service.dart';
 import 'drive/drive_service.dart';
 import 'feature_flags/feature_flags_service.dart';
 import 'legal/legal_service.dart';

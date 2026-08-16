@@ -1,6 +1,6 @@
 # NodeDa Flutter
 
-**Current version: `1.3.0`** · available at runtime as `NodeDa.version`.
+**Current version: `1.4.0`** · available at runtime as `NodeDa.version`.
 
 The official Flutter/Dart SDK for the **NodeDa** HTTP APIs. One typed
 client, one auth scheme, every public service NodeDa exposes — built on
@@ -19,7 +19,7 @@ final latest = await client.distribution.latest(
   channel: DistributionChannel.stable,
 );
 print('Latest version: ${latest.artifact.version ?? latest.release.version}');
-print('SDK version: ${NodeDa.version}'); // "1.3.0"
+print('SDK version: ${NodeDa.version}'); // "1.4.0"
 ```
 
 ## Requirements
@@ -57,7 +57,7 @@ Import and use:
 import 'package:nodeda/nodeda.dart';
 ```
 
-To pin a release, set `ref` to a tag (e.g. `v1.3.0`) once tags are published.
+To pin a release, set `ref` to a tag (e.g. `v1.4.0`) once tags are published.
 
 ## Authentication
 
@@ -106,9 +106,10 @@ flutter run --dart-define=NODEDA_API_KEY=sk_live_… --dart-define=NODEDA_ORG_ID
 | `client.legal` | Legal policies |
 | `client.llmHub` | LLM Hub chat completions |
 | `client.appAnalytics` | App analytics ingest |
+| `client.drive` | Drive (Firebase ID token; `/v1/drive/…`) |
 
 ```dart
-// Parallel health check across all ten services
+// Parallel health check across all eleven services
 final health = await client.healthAll();
 ```
 
@@ -243,6 +244,21 @@ Gateway error codes (via `NodeDaApiException`): `invalid_api_key`,
 `rate_limited`. `400` covers invalid `bundleId` / `platform` / `installId`
 / `sessionId` / `events`.
 
+### Drive API
+
+User-scoped Drive (`nrova.drive.v1`). Paths are `/v1/drive/…` — **not**
+`/v1/organizations/{orgId}/…`. Pass the signed-in user's Firebase ID
+token. Do not send `X-API-Key` or `OrganizationId`.
+
+```dart
+final session = await client.drive.session(idToken: idToken);
+final folder = await client.drive.createAppFolder(
+  idToken: idToken,
+  appKey: 'com.example.notes',
+  name: 'Example Notes',
+);
+```
+
 ## Error handling
 
 ```dart
@@ -290,6 +306,7 @@ lib/
     legal/
     llm_hub/
     app_analytics/
+    drive/
 ```
 
 ## License
