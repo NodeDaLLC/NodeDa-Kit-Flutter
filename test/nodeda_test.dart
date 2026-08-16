@@ -47,6 +47,7 @@ void main() {
       expect(configuration.endpoints.legalPolicies, unified);
       expect(configuration.endpoints.llmHub, unified);
       expect(configuration.endpoints.appAnalytics, unified);
+      expect(configuration.endpoints.drive, unified);
       expect(ServiceEndpoints.unifiedApiBase, unified);
     });
 
@@ -65,6 +66,7 @@ void main() {
       expect(client.legal, isNotNull);
       expect(client.llmHub, isNotNull);
       expect(client.appAnalytics, isNotNull);
+      expect(client.drive, isNotNull);
     });
   });
 
@@ -517,6 +519,85 @@ void main() {
     });
   });
 
+  group('drive', () {
+    test('session uses id token and user path', () async {
+      final mock = MockTransport((request) {
+        expect(request.method, 'GET');
+        expect(
+          request.url.toString(),
+          'https://api.nodeda.com/v1/drive/session',
+        );
+        expect(request.url.path, isNot(contains('/organizations/')));
+        expect(request.headers['Authorization'], 'Bearer firebase-id-token');
+        expect(request.headers['X-Firebase-Id-Token'], 'firebase-id-token');
+        expect(request.headers.containsKey('X-API-Key'), isFalse);
+        return (
+          utf8.encode('''
+{
+  "schema": "nrova.drive.v1",
+  "user": { "uid": "user_1", "email": "ada@example.com" },
+  "accounts": [
+    {
+      "id": "acct_1",
+      "name": "Acme",
+      "driveAccessible": true,
+      "drives": [
+        { "kind": "my", "space": "personal", "name": "My Drive" },
+        { "kind": "organization", "space": "shared", "name": "Organization Drive" }
+      ]
+    }
+  ]
+}
+'''),
+          200,
+          const {'content-type': 'application/json'},
+        );
+      });
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      final session = await client.drive.session(idToken: 'firebase-id-token');
+      expect(session.user.uid, 'user_1');
+      expect(session.accounts, hasLength(1));
+      expect(session.accounts.first.drives, hasLength(2));
+    });
+
+    test('createAppFolder does not use organization path', () async {
+      final mock = MockTransport((request) {
+        expect(request.method, 'POST');
+        expect(
+          request.url.toString(),
+          'https://api.nodeda.com/v1/drive/app-folders',
+        );
+        expect(request.url.toString(), isNot(contains('/organizations/')));
+        expect(request.headers['Authorization'], 'Bearer firebase-id-token');
+        return (
+          utf8.encode('''
+{
+  "schema": "nrova.drive.v1",
+  "created": true,
+  "folder": {
+    "id": "fld_1",
+    "kind": "folder",
+    "name": "Example Notes",
+    "space": "personal",
+    "appKey": "com.example.notes"
+  }
+}
+'''),
+          201,
+          const {'content-type': 'application/json'},
+        );
+      });
+      final client = NodeDaClient(apiKey: 'test-key', transport: mock);
+      final folder = await client.drive.createAppFolder(
+        idToken: 'firebase-id-token',
+        appKey: 'com.example.notes',
+        name: 'Example Notes',
+      );
+      expect(folder.folder.appKey, 'com.example.notes');
+      expect(folder.folder.space, DriveSpace.personal);
+    });
+  });
+
   group('map configuration', () {
     test('uses provided key and org', () {
       final configuration = MapConfiguration.fromMap({
@@ -593,7 +674,7 @@ void main() {
   group('version', () {
     test('SDK version is exposed', () {
       expect(NodeDa.version, isNotEmpty);
-      expect(NodeDa.version, '1.3.0');
+      expect(NodeDa.version, '1.4.0');
     });
   });
 
