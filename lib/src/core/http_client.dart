@@ -27,6 +27,7 @@ class HttpClient {
     required T Function(Object? json) decode,
     Map<String, String?> query = const {},
     bool authenticated = true,
+    Map<String, String> extraHeaders = const {},
   }) async {
     final request = _buildRequest(
       method: 'GET',
@@ -34,6 +35,7 @@ class HttpClient {
       query: query,
       body: null,
       authenticated: authenticated,
+      extraHeaders: extraHeaders,
     );
     return _perform(request, decode);
   }
@@ -44,6 +46,7 @@ class HttpClient {
     required T Function(Object? json) decode,
     Map<String, String?> query = const {},
     bool authenticated = true,
+    Map<String, String> extraHeaders = const {},
   }) async {
     final request = _buildRequest(
       method: 'POST',
@@ -51,6 +54,7 @@ class HttpClient {
       query: query,
       body: body == null ? null : jsonEncode(_stripNulls(body)),
       authenticated: authenticated,
+      extraHeaders: extraHeaders,
     );
     return _perform(request, decode);
   }
@@ -61,6 +65,7 @@ class HttpClient {
     required T Function(Object? json) decode,
     Map<String, String?> query = const {},
     bool authenticated = true,
+    Map<String, String> extraHeaders = const {},
   }) async {
     final request = _buildRequest(
       method: 'PATCH',
@@ -68,6 +73,7 @@ class HttpClient {
       query: query,
       body: body == null ? null : jsonEncode(_stripNulls(body)),
       authenticated: authenticated,
+      extraHeaders: extraHeaders,
     );
     return _perform(request, decode);
   }
@@ -78,6 +84,7 @@ class HttpClient {
     required T Function(Object? json) decode,
     Map<String, String?> query = const {},
     bool authenticated = true,
+    Map<String, String> extraHeaders = const {},
   }) async {
     final request = _buildRequest(
       method: 'PUT',
@@ -85,6 +92,7 @@ class HttpClient {
       query: query,
       body: body == null ? null : jsonEncode(_stripNulls(body)),
       authenticated: authenticated,
+      extraHeaders: extraHeaders,
     );
     return _perform(request, decode);
   }
@@ -93,6 +101,7 @@ class HttpClient {
     String path, {
     Map<String, String?> query = const {},
     bool authenticated = true,
+    Map<String, String> extraHeaders = const {},
   }) async {
     final request = _buildRequest(
       method: 'DELETE',
@@ -100,6 +109,7 @@ class HttpClient {
       query: query,
       body: null,
       authenticated: authenticated,
+      extraHeaders: extraHeaders,
     );
     final response = await _sendThrowing(request);
     _validate(response);
@@ -129,6 +139,7 @@ class HttpClient {
     required Map<String, String?> query,
     required String? body,
     required bool authenticated,
+    Map<String, String> extraHeaders = const {},
     bool followRedirects = true,
   }) {
     final base = Uri.parse(baseUrl);
@@ -161,6 +172,7 @@ class HttpClient {
       headers['Authorization'] = 'Bearer ${configuration.apiKey}';
       headers['X-API-Key'] = configuration.apiKey;
     }
+    headers.addAll(extraHeaders);
 
     return NodeDaRequest(
       method: method,

@@ -7,7 +7,7 @@ import 'core/map_configuration.dart';
 import 'core/node_da_configuration.dart';
 import 'core/node_da_transport.dart';
 import 'core/service_endpoints.dart';
-import 'distribution/distribution_service.dart';
+import 'drive/drive_service.dart';
 import 'feature_flags/feature_flags_service.dart';
 import 'legal/legal_service.dart';
 import 'llm_hub/llm_hub_service.dart';
@@ -108,6 +108,13 @@ class NodeDaClient {
             transport: transport,
           ),
           orgId: configuration.organizationId,
+        ),
+        drive = DriveService(
+          http: HttpClient(
+            baseUrl: configuration.endpoints.drive,
+            configuration: configuration,
+            transport: transport,
+          ),
         );
 
   /// Convenience: build a client with sane defaults from an API key.
@@ -179,6 +186,7 @@ class NodeDaClient {
   final LegalService legal;
   final LLMHubService llmHub;
   final AppAnalyticsService appAnalytics;
+  final DriveService drive;
 
   /// Issues `GET /health` against every service client in parallel.
   Future<Map<String, HealthResponse>> healthAll() async {
@@ -193,6 +201,7 @@ class NodeDaClient {
       legal.health(),
       llmHub.health(),
       appAnalytics.health(),
+      drive.health(),
     ]);
     return {
       'distribution': results[0],
@@ -205,6 +214,7 @@ class NodeDaClient {
       'legal': results[7],
       'llmHub': results[8],
       'appAnalytics': results[9],
+      'drive': results[10],
     };
   }
 }
